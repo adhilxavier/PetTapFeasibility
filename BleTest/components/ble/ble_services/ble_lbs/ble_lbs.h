@@ -150,9 +150,11 @@ void ble_lbs_on_ble_evt(ble_evt_t const * p_ble_evt, void * p_context);
  * @retval NRF_SUCCESS If the notification was sent successfully. Otherwise, an error code is returned.
  */
 uint32_t BleUpdateLatitude(uint16_t conn_handle, ble_lbs_t * p_lbs, uint8_t 
-*button_state, uint8_t ucLen);
+*button_state, uint16_t ucLen);
 
 
+uint32_t BleUpdateLongitude(uint16_t conn_handle, ble_lbs_t * p_lbs, uint8_t 
+*button_state, uint16_t ucLen);
 #ifdef __cplusplus
 }
 #endif

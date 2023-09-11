@@ -507,17 +507,6 @@ static void button_event_handler(uint8_t pin_no, uint8_t button_action)
 
     switch (pin_no)
     {
-        case LEDBUTTON_BUTTON:
-            //NRF_LOG_INFO("Send button state change.");
-            //err_code = ble_lbs_on_button_change(m_conn_handle, &m_lbs, button_action);
-            //if (err_code != NRF_SUCCESS &&
-            //    err_code != BLE_ERROR_INVALID_CONN_HANDLE &&
-            //    err_code != NRF_ERROR_INVALID_STATE &&
-            //    err_code != BLE_ERROR_GATTS_SYS_ATTR_MISSING)
-            //{
-            //    APP_ERROR_CHECK(err_code);
-            //}
-            //break;
 
         default:
             APP_ERROR_HANDLER(pin_no);
@@ -629,9 +618,10 @@ uint32_t err_code = 0x00;
         //idle_state_handle();
          if (app_uart_get(&ucByte) == NRF_SUCCESS)
          {
-          BleUpdateLatitude(m_conn_handle, &m_lbs, &ucByte, 1);
-          //ucByte++;
-          nrf_delay_ms(5);
+           BleUpdateLatitude(m_conn_handle, &m_lbs, &ucByte, 1);
+           nrf_delay_ms(5);
+            BleUpdateLongitude(m_conn_handle, &m_lbs, &ucByte, 1);
+            nrf_delay_ms(5);
           }
     }
 }
