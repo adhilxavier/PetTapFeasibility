@@ -100,11 +100,19 @@
 #define UART_TX_BUF_SIZE 256                         /**< UART TX buffer size. */
 #define UART_RX_BUF_SIZE 256                       /**< UART RX buffer size. */
 
-
 BLE_LBS_DEF(m_lbs);                                                             /**< LED Button Service instance. */
 NRF_BLE_GATT_DEF(m_gatt);                                                       /**< GATT module instance. */
 NRF_BLE_QWR_DEF(m_qwr);                                                         /**< Context for the Queued Write module.*/
 
+typedef enum __eRxState
+{
+    START,
+    RCV,
+    END
+}_eRxState;
+
+static _eRxState RxState = START;
+static uint8_t ucResponseData[32] = {0};
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
 static uint8_t m_adv_handle = BLE_GAP_ADV_SET_HANDLE_NOT_SET;                   /**< Advertising handle used to identify an advertising set. */
@@ -127,6 +135,8 @@ static ble_gap_adv_data_t m_adv_data =
     }
 };
 
+
+bool ReceivePacket();
 /**@brief Function for assert macro callback.
  *
  * @details This function will be called in case of an assert in the SoftDevice.
@@ -571,6 +581,7 @@ int main(void)
 {
 uint8_t ucByte =0x00;
 uint32_t err_code = 0x00;
+uint8_t ucArr[] = {0x98, 0x72, 0x56, 0x11, 0x22, 0x33, 0x22, 0x33};
     // Initialize.
       //nrf_gpio_cfg_input(RX_PIN_NUMBER, NRF_GPIO_PIN_PULLUP); 
         const app_uart_comm_params_t comm_params =
@@ -592,7 +603,7 @@ uint32_t err_code = 0x00;
                          UART_RX_BUF_SIZE,
                          UART_TX_BUF_SIZE,
                          uart_error_handle,
-                         APP_IRQ_PRIORITY_HIGH,
+                         APP_IRQ_PRIORITY_HIGHEST,
                          err_code);
 
     APP_ERROR_CHECK(err_code);    // Start execution.
@@ -615,15 +626,71 @@ uint32_t err_code = 0x00;
     // Enter main loop.
     for (;;)
     {
-        //idle_state_handle();
+          /*
          if (app_uart_get(&ucByte) == NRF_SUCCESS)
          {
-           BleUpdateLatitude(m_conn_handle, &m_lbs, &ucByte, 1);
-           nrf_delay_ms(5);
-            BleUpdateLongitude(m_conn_handle, &m_lbs, &ucByte, 1);
+            BleUpdateLatitude(m_conn_handle, &m_lbs, ucArr, 8);
+            nrf_delay_ms(5);
+            BleUpdateLongitude(m_conn_handle, &m_lbs, ucArr, 8);
             nrf_delay_ms(5);
           }
+          */
+         
+         if (ReceivePacket())
+         {
+            BleUpdateLatitude(m_conn_handle, &m_lbs, ucResponseData, 15);
+            nrf_delay_ms(1);
+            BleUpdateLongitude(m_conn_handle, &m_lbs, ucResponseData, 15);
+            nrf_delay_ms(1);
+            ucByte++;
+         }
+         //nrf_delay_ms(5);
     }
+}
+
+bool ReceivePacket()
+{
+    uint8_t ucByte = 0x00;
+    static uint8_t ucPos = 0;
+    static bool ucResponseFlag = false;
+
+    while(1)
+    {
+      if (app_uart_get(&ucByte) == NRF_SUCCESS)
+      {
+          switch(RxState)
+          {
+            case START :  memset(ucResponseData, 0, sizeof(ucResponseData));
+                          if (ucByte == '*')
+                          { 
+                            RxState = RCV;
+                          }
+                          ucResponseFlag = false;
+                          break;
+
+            case RCV   : if (ucByte == '#')
+                         {
+                            RxState = END;
+                            break;
+                         }
+                         ucResponseData[ucPos++] = ucByte;
+                         break;
+
+            case END   : ucPos = 0;
+                         ucResponseFlag = true;
+                         break;
+                    
+          }
+      }
+      nrf_delay_ms(5);
+      if (ucResponseFlag)
+      {
+        break;
+      }
+    }
+    //nrf_delay_ms(10);
+
+    return ucResponseFlag;
 }
 
 
