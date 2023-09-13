@@ -112,7 +112,7 @@ typedef enum __eRxState
 }_eRxState;
 
 static _eRxState RxState = START;
-static uint8_t ucResponseData[32] = {0};
+static uint8_t ucResponseData[50] = {0};
 static uint16_t m_conn_handle = BLE_CONN_HANDLE_INVALID;                        /**< Handle of the current connection. */
 
 static uint8_t m_adv_handle = BLE_GAP_ADV_SET_HANDLE_NOT_SET;                   /**< Advertising handle used to identify an advertising set. */
@@ -581,10 +581,8 @@ int main(void)
 {
 uint8_t ucByte =0x00;
 uint32_t err_code = 0x00;
-uint8_t ucArr[] = {0x98, 0x72, 0x56, 0x11, 0x22, 0x33, 0x22, 0x33};
     // Initialize.
-      //nrf_gpio_cfg_input(RX_PIN_NUMBER, NRF_GPIO_PIN_PULLUP); 
-        const app_uart_comm_params_t comm_params =
+           const app_uart_comm_params_t comm_params =
      {
             RX_PIN_NUMBER,
             TX_PIN_NUMBER,
@@ -592,11 +590,7 @@ uint8_t ucArr[] = {0x98, 0x72, 0x56, 0x11, 0x22, 0x33, 0x22, 0x33};
             UART_PIN_DISCONNECTED,
             HWFC,
             false,
-////////#if defined (UART_PRESENT)
           NRF_UART_BAUDRATE_115200
-////////#else
-////////         NRF_UARTE_BAUDRATE_115200
-////////#endif
       };
 
     APP_UART_FIFO_INIT(&comm_params,
@@ -613,6 +607,7 @@ uint8_t ucArr[] = {0x98, 0x72, 0x56, 0x11, 0x22, 0x33, 0x22, 0x33};
     buttons_init();
     power_management_init();
     ble_stack_init();
+    nrf_ble_gatt_att_mtu_periph_set(&m_gatt, 128);
     gap_params_init();
     gatt_init();
     services_init();
@@ -625,26 +620,16 @@ uint8_t ucArr[] = {0x98, 0x72, 0x56, 0x11, 0x22, 0x33, 0x22, 0x33};
 
     // Enter main loop.
     for (;;)
-    {
-          /*
-         if (app_uart_get(&ucByte) == NRF_SUCCESS)
-         {
-            BleUpdateLatitude(m_conn_handle, &m_lbs, ucArr, 8);
-            nrf_delay_ms(5);
-            BleUpdateLongitude(m_conn_handle, &m_lbs, ucArr, 8);
-            nrf_delay_ms(5);
-          }
-          */
-         
+    {         
          if (ReceivePacket())
          {
-            BleUpdateLatitude(m_conn_handle, &m_lbs, ucResponseData, 15);
+            BleUpdateLatitude(m_conn_handle, &m_lbs, ucResponseData, 36);
             nrf_delay_ms(1);
-            BleUpdateLongitude(m_conn_handle, &m_lbs, ucResponseData, 15);
+            BleUpdateLongitude(m_conn_handle, &m_lbs, ucResponseData, 36);
             nrf_delay_ms(1);
-            ucByte++;
+            //memset(ucResponseData, 0, sizeof(ucResponseData));
+            //ucByte++;
          }
-         //nrf_delay_ms(5);
     }
 }
 
@@ -682,7 +667,7 @@ bool ReceivePacket()
                     
           }
       }
-      nrf_delay_ms(5);
+      //nrf_delay_ms(5);
       if (ucResponseFlag)
       {
         break;
